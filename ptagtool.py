@@ -2,20 +2,22 @@
 """
 ptagtool.py - an image point tagging tool.  Saves tagged point
 coordinates into text files with extension '.pts' and filename the
-same as the image filename. On Ubuntu, you need some or all of the 
+same as the image filename. On Ubuntu, you need some or all of the
 following packages: python-tk, python-imaging, python-pil.imagetk.
 Author: Doron Tal
 """
 
 import sys
-import os, os.path
-import PIL.Image
+import os
 from Tkinter import *
 from ImageTk import PhotoImage
 from tkFont import Font
 from math import sqrt
+import PIL.Image
+
 
 class Application(Frame):
+    """Application class"""
     # this class inherits from Tkinter.parent
     def __init__(self, path, master=None):
         """Constructor"""
@@ -116,11 +118,11 @@ class Application(Frame):
         self.canvas.bind('<Button-3>', self.canvasButton3ClickCB)
 
         # create scrollbars
-        self.sbHorizontal = Scrollbar(self, orient=HORIZONTAL, width=10)
-        self.sbVertical = Scrollbar(self, orient=VERTICAL, width=10)
+        self.x_scrollbar = Scrollbar(self, orient=HORIZONTAL, width=10)
+        self.y_scrollbar = Scrollbar(self, orient=VERTICAL, width=10)
 
-        self.sbHorizontal.grid(row=1, column=1, columnspan=2, sticky=E+W)
-        self.sbVertical.grid(row=0, column=3, sticky=N+S)
+        self.x_scrollbar.grid(row=1, column=1, columnspan=2, sticky=E+W)
+        self.y_scrollbar.grid(row=0, column=3, sticky=N+S)
 
         # create lb for showing labeled/not-labeled images
         self.lbPts = Listbox(self, width=1, takefocus=0, exportselection=0,
@@ -130,14 +132,14 @@ class Application(Frame):
 
         # create lb for showing image filenames
         self.lbImgs = Listbox(self, width=30, selectmode=SINGLE,
-                              xscrollcommand=self.sbHorizontal.set,
-                              yscrollcommand=self.sbVertical.set,
+                              xscrollcommand=self.x_scrollbar.set,
+                              yscrollcommand=self.y_scrollbar.set,
                               exportselection=0, font=self.lbFont)
         self.lbImgs.grid(row=0, column=2, sticky=N+S+E+W)
 
         # bind scrollbar movement
-        self.sbHorizontal['command'] = self.lbImgs.xview
-        self.sbVertical['command'] = self.sbVerticalViewCB
+        self.x_scrollbar['command'] = self.lbImgs.xview
+        self.y_scrollbar['command'] = self.on_scroll_y
 
         # bind left mouse click selection
         self.lbImgs.bind('<Button-1>', lambda e, s=self:
@@ -179,14 +181,14 @@ class Application(Frame):
         else:
             self.select(iFirstImgWithoutPtsFile)
 
-    def sbVerticalViewCB(self, *args):
+    def on_scroll_y(self, *args):
         """Vertical scrollbar motion callback"""
         apply(self.lbImgs.yview, args)
         apply(self.lbPts.yview, args)
 
     def wheelCB(self, lb, iButton, nUnits=5):
         """Mouse wheel move callback"""
-        self.sbVertical.set
+        self.y_scrollbar.set
         if iButton == 5:
             lb.yview(SCROLL, nUnits, UNITS)
         if iButton == 4:
