@@ -65,10 +65,10 @@ class Application(Frame):
         self.crosshair3_color = 'cyan'
 
         # the width, in pixels, of crosshairs
-        self.CrossLineWidth = 2
+        self.crosshair_thickness = 2
 
         # length of crosshair (updated upon display)
-        self.CrossHalfLength = -1
+        self.crosshair_radius = -1
 
         # the scale of currently displayed image (updated upon display)
         self.scaleImg = 1.0
@@ -209,7 +209,7 @@ class Application(Frame):
     def canvasButton3ClickCB(self, event):
         """Button 3 click callback: deletes landmark near click location"""
         if not self.bCanvasCoordsInImg(event.x, event.y): return
-        i = self.FindNearestPtWithinCrosshairs(event.x, event.y)
+        i = self.closest_crosshair_point(event.x, event.y)
         if i >= 0:
             del self.lPtsOrig[i]
             del self.lPtsCanvas[i]
@@ -273,8 +273,8 @@ class Application(Frame):
         self.xOffsetImg = 0.5*(float(widthCanvas)-float(widthImgNew))
         self.yOffsetImg = 0.5*(float(heightCanvas)-float(heightImgNew))
 
-        self.CrossHalfLength = 0.5*self.crosshair_size_ratio*float(min(widthImgNew,
-                                                                heightImgNew))
+        self.crosshair_radius = 0.5*self.crosshair_size_ratio* \
+                                float(min(widthImgNew, heightImgNew))
 
         self.canvas.delete('image')
         self.canvas.create_image(self.xOffsetImg, self.yOffsetImg, anchor=NW,
@@ -295,25 +295,25 @@ class Application(Frame):
         # draw first crosshair
         if len(self.lPtsCanvas) > 0:
             firstPt = self.lPtsCanvas[0]
-            self.drawCross(firstPt[0], firstPt[1], self.crosshair1_color),
+            self.draw_crosshair(firstPt[0], firstPt[1], self.crosshair1_color),
 
         # draw second crosshair
         if len(self.lPtsCanvas) > 1:
             secondPt = self.lPtsCanvas[1]
-            self.drawCross(secondPt[0], secondPt[1], self.crosshair2_color)
+            self.draw_crosshair(secondPt[0], secondPt[1], self.crosshair2_color)
 
         # draw third crosshair
         if len(self.lPtsCanvas) > 2:
-            map(lambda(Pt): self.drawCross(Pt[0], Pt[1], self.crosshair3_color),
+            map(lambda(Pt): self.draw_crosshair(Pt[0], Pt[1], self.crosshair3_color),
                 self.lPtsCanvas[2:])
 
-    def drawCross(self, x, y, fillColor):
+    def draw_crosshair(self, x, y, fillColor):
         """Draw a cross at location (x, y) in the currently selected image"""
-        xStart = x-self.CrossHalfLength
-        yStart = y-self.CrossHalfLength
+        xStart = x-self.crosshair_radius
+        yStart = y-self.crosshair_radius
 
-        xEnd = x+self.CrossHalfLength
-        yEnd = y+self.CrossHalfLength
+        xEnd = x+self.crosshair_radius
+        yEnd = y+self.crosshair_radius
 
         minX = self.xOffsetImg
         minY = self.yOffsetImg
@@ -328,9 +328,9 @@ class Application(Frame):
         if yEnd > maxY: yEnd = maxY
 
         self.canvas.create_line(x, yStart, x, yEnd, fill=fillColor,
-                                width=self.CrossLineWidth, tags='line')
+                                width=self.crosshair_thickness, tags='line')
         self.canvas.create_line(xStart, y, xEnd, y, fill=fillColor,
-                                width=self.CrossLineWidth, tags='line')
+                                width=self.crosshair_thickness, tags='line')
 
     def iSelection(self):
         """Returns index of current selection"""
@@ -343,7 +343,7 @@ class Application(Frame):
                 x < self.xOffsetImg+self.imgTk.width() and
                 y < self.yOffsetImg+self.imgTk.height())
 
-    def FindNearestPtWithinCrosshairs(self, x, y):
+    def closest_crosshair_point(self, x, y):
         """Returns index of landmark within crosshair length of (x,y), or -1"""
         i = 0
         imin = -1
@@ -352,7 +352,7 @@ class Application(Frame):
             xdist = x-pair[0]
             ydist = y-pair[1]
             dist = sqrt(xdist*xdist+ydist*ydist)
-            if dist <= self.CrossHalfLength and dist < minDist:
+            if dist <= self.crosshair_radius and dist < minDist:
                 imin = i
             i += 1
         return imin
