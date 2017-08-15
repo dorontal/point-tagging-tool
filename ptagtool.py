@@ -51,18 +51,18 @@ class Application(Frame):
 
         # crosshair line size , as fraction of
         # min(displayed-imagewidth, displayed-image-height)
-        self.CrossSizeFrac = 0.05
+        self.crosshair_size_ratio = 0.05
 
         # color for drawing first crosshair - the origin
-        self.CrossColor1 = 'red'
+        self.crosshair1_color = 'red'
 
         # color for drawing second crosshair - (together with the first
         # crosshair, these two points define a coordinate frame) -
-        self.CrossColor2 = 'green'
+        self.crosshair2_color = 'green'
 
         # color for drawing third and on crosshairs - all points other
         # than the first and second, have this color
-        self.CrossColor3 = 'cyan'
+        self.crosshair3_color = 'cyan'
 
         # the width, in pixels, of crosshairs
         self.CrossLineWidth = 2
@@ -273,7 +273,7 @@ class Application(Frame):
         self.xOffsetImg = 0.5*(float(widthCanvas)-float(widthImgNew))
         self.yOffsetImg = 0.5*(float(heightCanvas)-float(heightImgNew))
 
-        self.CrossHalfLength = 0.5*self.CrossSizeFrac*float(min(widthImgNew,
+        self.CrossHalfLength = 0.5*self.crosshair_size_ratio*float(min(widthImgNew,
                                                                 heightImgNew))
 
         self.canvas.delete('image')
@@ -295,16 +295,16 @@ class Application(Frame):
         # draw first crosshair
         if len(self.lPtsCanvas) > 0:
             firstPt = self.lPtsCanvas[0]
-            self.drawCross(firstPt[0], firstPt[1], self.CrossColor1),
+            self.drawCross(firstPt[0], firstPt[1], self.crosshair1_color),
 
         # draw second crosshair
         if len(self.lPtsCanvas) > 1:
             secondPt = self.lPtsCanvas[1]
-            self.drawCross(secondPt[0], secondPt[1], self.CrossColor2)
+            self.drawCross(secondPt[0], secondPt[1], self.crosshair2_color)
 
         # draw third crosshair
         if len(self.lPtsCanvas) > 2:
-            map(lambda(Pt): self.drawCross(Pt[0], Pt[1], self.CrossColor3),
+            map(lambda(Pt): self.drawCross(Pt[0], Pt[1], self.crosshair3_color),
                 self.lPtsCanvas[2:])
 
     def drawCross(self, x, y, fillColor):
