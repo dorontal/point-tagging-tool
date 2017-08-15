@@ -71,7 +71,7 @@ class Application(Frame):
         self.crosshair_radius = -1
 
         # the scale of currently displayed image (updated upon display)
-        self.scaleImg = 1.0
+        self.image_scale = 1.0
 
         # True if any of the .pts file points have been changed
         # for the currently selected image, False otherwise
@@ -197,8 +197,8 @@ class Application(Frame):
     def canvasButton1ClickCB(self, event):
         """Button 1 click callback: adds a crosshair at click location"""
         if self.bCanvasCoordsInImg(event.x, event.y):
-            pt = [(event.x-self.xOffsetImg)/self.scaleImg,
-                  (event.y-self.yOffsetImg)/self.scaleImg]
+            pt = [(event.x-self.xOffsetImg)/self.image_scale,
+                  (event.y-self.yOffsetImg)/self.image_scale]
             ptScaled = [float(event.x), float(event.y)]
             self.lPtsOrig.append(pt)
             self.lPtsCanvas.append(ptScaled)
@@ -282,9 +282,9 @@ class Application(Frame):
 
         scaleWidth = float(widthImgNew)/float(widthImg)
         scaleHeight = float(heightImgNew)/float(heightImg)
-        self.scaleImg = 0.5*(scaleWidth+scaleHeight)
-        self.lPtsCanvas = map(lambda(x): [x[0]*self.scaleImg+self.xOffsetImg,
-                                          x[1]*self.scaleImg+self.yOffsetImg],
+        self.image_scale = 0.5*(scaleWidth+scaleHeight)
+        self.lPtsCanvas = map(lambda(x): [x[0]*self.image_scale+self.xOffsetImg,
+                                          x[1]*self.image_scale+self.yOffsetImg],
                               self.lPtsOrig)
         self.drawPts()
 
