@@ -17,68 +17,68 @@ from math import sqrt
 
 class Application(Frame):
     # this class inherits from Tkinter.parent
-    def __init__(self, strPath, master=None):
+    def __init__(self, path, master=None):
         """Constructor"""
         # call parent class constructor
         Frame.__init__(self, master)
 
-        self.strPath = strPath
-        self.lImgFilenames = FindImgFiles(strPath)
+        self.path = path
+        self.image_filenames = find_image_files(path)
 
         # necessary to make the application actually appear on the screen
         self.grid(sticky=N+S+E+W)
 
         # PIL image, for loading from file and for resizing
-        self.imgPIL = None
+        self.image_pil = None
 
         # Tk photoimage, for display
-        self.imgTk = None
+        self.image_tk = None
 
         # list of coords (2-element lists) of current selection's pts
-        self.lPtsOrig = []
+        self.points_orig = []
 
-        # lPtsCanvas is 'lPtsOrig', in canvas coordinates
-        self.lPtsCanvas = []
+        # points_canvas is 'points_orig', in canvas coordinates
+        self.points_canvas = []
 
         # x- and y-coords of displayed image in canvas coordinate frame
-        self.xOffsetImg = -1
-        self.yOffsetImg = -1
+        self.x_offset = -1
+        self.y_offset = -1
 
         # font in listbox text
-        self.lbFont = Font(family='Helvetica', size=10, weight='normal')
+        self.font = Font(family='Helvetica', size=10, weight='normal')
 
         # crosshair line size , as fraction of
         # min(displayed-imagewidth, displayed-image-height)
-        self.CrossSizeFrac = 0.05
+        self.crosshair_fraction = 0.05
 
         # color for drawing first crosshair - the origin
-        self.CrossColor1 = 'red'
+        self.crosshair1_color = 'red'
 
         # color for drawing second crosshair - (together with the first
         # crosshair, these two points define a coordinate frame) -
-        self.CrossColor2 = 'green'
+        self.crosshair2_color = 'green'
 
         # color for drawing third and on crosshairs - all points other
         # than the first and second, have this color
-        self.CrossColor3 = 'cyan'
+        self.crosshair3_color = 'cyan'
 
         # the width, in pixels, of crosshairs
-        self.CrossLineWidth = 2
+        self.crosshair_thickness = 2
 
         # length of crosshair (updated upon display)
-        self.CrossHalfLength = -1
+        self.crosshair_radius = -1
 
         # the scale of currently displayed image (updated upon display)
-        self.scaleImg = 1.0
+        self.image_scaling = 1.0
 
         # True if any of the .pts file points have been changed
         # for the currently selected image, False otherwise
-        self.bChangedAny = False
+        self.some_changed = False
 
         # create all widges and set their initial conditions
-        self.createWidgets()
+        self.create_widgets()
 
-    def createWidgets(self):
+    def create_widgets(self):
         """Set up all application graphics"""
         # get the top level winddow
         top = self.winfo_toplevel()
@@ -93,8 +93,8 @@ class Application(Frame):
         top.columnconfigure(0, weight=1)
 
         # bind keys for entire app
-        top.bind_all('<Up>', self.selectPrev)
-        top.bind_all('<Down>', self.selectNext)
+        top.bind_all('<Up>', self.select_prev)
+        top.bind_all('<Down>', self.select_next)
 
         # make row 0 of Application's widget's grid stretchable
         self.rowconfigure(0, weight=1)
@@ -109,111 +109,112 @@ class Application(Frame):
 
         # bind resize events (need -4 here bec. event gives 4+(real_size))
         self.canvas.bind('<Configure>', lambda e, s=self:
-                         s.canvasResizeCB(e.width-2, e.height-2))
+                         s.on_resize_canvas(e.width-2, e.height-2))
 
         # bind canvas mouse clicks
-        self.canvas.bind('<Button-1>', self.canvasButton1ClickCB)
-        self.canvas.bind('<Button-3>', self.canvasButton3ClickCB)
+        self.canvas.bind('<Button-1>', self.on_click_button1)
+        self.canvas.bind('<Button-3>', self.on_click_button3)
 
         # create scrollbars
-        self.sbHorizontal = Scrollbar(self, orient=HORIZONTAL, width=10)
-        self.sbVertical = Scrollbar(self, orient=VERTICAL, width=10)
+        self.scrollbar_x = Scrollbar(self, orient=HORIZONTAL, width=10)
+        self.scrollbar_y = Scrollbar(self, orient=VERTICAL, width=10)
 
-        self.sbHorizontal.grid(row=1, column=1, columnspan=2, sticky=E+W)
-        self.sbVertical.grid(row=0, column=3, sticky=N+S)
+        self.scrollbar_x.grid(row=1, column=1, columnspan=2, sticky=E+W)
+        self.scrollbar_y.grid(row=0, column=3, sticky=N+S)
 
         # create lb for showing labeled/not-labeled images
-        self.lbPts = Listbox(self, width=1, takefocus=0, exportselection=0,
-                             font=self.lbFont)
+        self.listbox_marks = Listbox(self, width=1, takefocus=0,
+                                     exportselection=0,
+                                     font=self.font)
 
-        self.lbPts.grid(row=0, column=1, sticky=N+S+E+W)
+        self.listbox_marks.grid(row=0, column=1, sticky=N+S+E+W)
 
         # create lb for showing image filenames
-        self.lbImgs = Listbox(self, width=30, selectmode=SINGLE,
-                              xscrollcommand=self.sbHorizontal.set,
-                              yscrollcommand=self.sbVertical.set,
-                              exportselection=0, font=self.lbFont)
-        self.lbImgs.grid(row=0, column=2, sticky=N+S+E+W)
+        self.lisbox_filenames = Listbox(self, width=30, selectmode=SINGLE,
+                                        xscrollcommand=self.scrollbar_x.set,
+                                        yscrollcommand=self.scrollbar_y.set,
+                                        exportselection=0, font=self.font)
+        self.lisbox_filenames.grid(row=0, column=2, sticky=N+S+E+W)
 
         # bind scrollbar movement
-        self.sbHorizontal['command'] = self.lbImgs.xview
-        self.sbVertical['command'] = self.sbVerticalViewCB
+        self.scrollbar_x['command'] = self.lisbox_filenames.xview
+        self.scrollbar_y['command'] = self.on_scrollbar_y
 
         # bind left mouse click selection
-        self.lbImgs.bind('<Button-1>', lambda e, s=self:
-                         s.select(self.lbImgs.nearest(e.y)))
-        self.lbPts.bind('<Button-1>', lambda e, s=self:
-                        s.select(self.lbImgs.nearest(e.y)))
+        self.lisbox_filenames.bind('<Button-1>', lambda e, s=self:
+                                   s.select(self.lisbox_filenames.nearest(e.y)))
+        self.listbox_marks.bind('<Button-1>', lambda e, s=self:
+                                s.select(self.lisbox_filenames.nearest(e.y)))
 
         # bind wheel scroll
-        self.lbImgs.bind('<Button-4>', lambda e, s=self:
-                         s.wheelCB(self.lbPts, 4))
-        self.lbImgs.bind('<Button-5>', lambda e, s=self:
-                         s.wheelCB(self.lbPts, 5))
-        self.lbPts.bind('<Button-4>', lambda e, s=self:
-                        s.wheelCB(self.lbImgs, 4))
-        self.lbPts.bind('<Button-5>', lambda e, s=self:
-                        s.wheelCB(self.lbImgs, 5))
+        self.lisbox_filenames.bind('<Button-4>', lambda e, s=self:
+                                   s.on_mousewheel(self.listbox_marks, 4))
+        self.lisbox_filenames.bind('<Button-5>', lambda e, s=self:
+                                   s.on_mousewheel(self.listbox_marks, 5))
+        self.listbox_marks.bind('<Button-4>', lambda e, s=self:
+                                s.on_mousewheel(self.lisbox_filenames, 4))
+        self.listbox_marks.bind('<Button-5>', lambda e, s=self:
+                                s.on_mousewheel(self.lisbox_filenames, 5))
 
-        # nSkip is # of chars to skip in path string so that only the
+        # skip is # of chars to skip in path string so that only the
         # part of the path that was not supplied is displayed
-        nSkip = len(self.strPath)
-        if self.strPath[nSkip-1] != '/': nSkip += 1
+        skip = len(self.path)
+        if self.path[skip-1] != '/': skip += 1
 
         # insert image filenames plus marks into lists and
         # select first image that does not have pts file
         i = 0
-        iFirstImgWithoutPtsFile = -1
-        for strImgFilename in self.lImgFilenames:
-            self.lbImgs.insert(END, strImgFilename[nSkip:])
-            if self.bHasPtsFile(i):
-                self.lbPts.insert(END, '+')
+        index_of_image_with_no_pts_file = -1
+        for image_filename in self.image_filenames:
+            self.lisbox_filenames.insert(END, image_filename[skip:])
+            if self.has_pts_file(i):
+                self.listbox_marks.insert(END, '+')
             else:
-                self.lbPts.insert(END, '')
-                if iFirstImgWithoutPtsFile < 0:
-                    iFirstImgWithoutPtsFile = i
+                self.listbox_marks.insert(END, '')
+                if index_of_image_with_no_pts_file < 0:
+                    index_of_image_with_no_pts_file = i
             i += 1
 
-        if iFirstImgWithoutPtsFile < 0:
+        if index_of_image_with_no_pts_file < 0:
             self.select(0)
         else:
-            self.select(iFirstImgWithoutPtsFile)
+            self.select(index_of_image_with_no_pts_file)
 
-    def sbVerticalViewCB(self, *args):
+    def on_scrollbar_y(self, *args):
         """Vertical scrollbar motion callback"""
-        apply(self.lbImgs.yview, args)
-        apply(self.lbPts.yview, args)
+        apply(self.lisbox_filenames.yview, args)
+        apply(self.listbox_marks.yview, args)
 
-    def wheelCB(self, lb, iButton, nUnits=5):
+    def on_mousewheel(self, lb, iButton, nUnits=5):
         """Mouse wheel move callback"""
-        self.sbVertical.set
+        self.scrollbar_y.set
         if iButton == 5:
             lb.yview(SCROLL, nUnits, UNITS)
         if iButton == 4:
             lb.yview(SCROLL, -nUnits, UNITS)
 
-    def canvasButton1ClickCB(self, event):
+    def on_click_button1(self, event):
         """Button 1 click callback: adds a crosshair at click location"""
-        if self.bCanvasCoordsInImg(event.x, event.y):
-            pt = [(event.x-self.xOffsetImg)/self.scaleImg,
-                  (event.y-self.yOffsetImg)/self.scaleImg]
+        if self.coord_in_img(event.x, event.y):
+            pt = [(event.x-self.x_offset)/self.image_scaling,
+                  (event.y-self.y_offset)/self.image_scaling]
             ptScaled = [float(event.x), float(event.y)]
-            self.lPtsOrig.append(pt)
-            self.lPtsCanvas.append(ptScaled)
-            if len(self.lPtsOrig) == 1: self.MarkAsLabeled()
-            self.canvasResizeCB(self.canvas['width'], self.canvas['height'])
-            self.bChangedAny = True
+            self.points_orig.append(pt)
+            self.points_canvas.append(ptScaled)
+            if len(self.points_orig) == 1: self.mark_labeled()
+            self.on_resize_canvas(self.canvas['width'], self.canvas['height'])
+            self.some_changed = True
 
-    def canvasButton3ClickCB(self, event):
+    def on_click_button3(self, event):
         """Button 3 click callback: deletes landmark near click location"""
-        if not self.bCanvasCoordsInImg(event.x, event.y): return
-        i = self.FindNearestPtWithinCrosshairs(event.x, event.y)
+        if not self.coord_in_img(event.x, event.y): return
+        i = self.find_point_near_crosshair(event.x, event.y)
         if i >= 0:
-            del(self.lPtsOrig[i])
-            del(self.lPtsCanvas[i])
-            if len(self.lPtsOrig) == 0: self.MarkAsUnlabeled()
-            self.canvasResizeCB(self.canvas['width'], self.canvas['height'])
-            self.bChangedAny = True
+            del(self.points_orig[i])
+            del(self.points_canvas[i])
+            if len(self.points_orig) == 0: self.mark_unlabeled()
+            self.on_resize_canvas(self.canvas['width'], self.canvas['height'])
+            self.some_changed = True
 
     def select(self, i):
         """Select the i'th image to work with - make current selection = i"""
@@ -222,268 +223,271 @@ class Application(Frame):
         # automatically reorder a previously tagged database so that
         # the person's right eye is the first point, left eye is
         # second point and mouth is third point
-        self.ReorderPoints()
-        if self.bChangedAny: self.savePts()
-        self.lbImgs.selection_clear(0, END)
-        self.lbPts.selection_clear(0, END)
-        self.lbImgs.selection_set(i)
-        self.lbPts.selection_set(i)
-        self.lbImgs.see(i)
-        self.lbPts.see(i)
-        self.imgPIL = PIL.Image.open(self.strImgFilename())
-        self.lPtsOrig = self.readPtsFile()
-        self.canvasResizeCB(self.canvas['width'], self.canvas['height'])
+        self.sort_points()
+        if self.some_changed: self.save_points()
+        self.lisbox_filenames.selection_clear(0, END)
+        self.listbox_marks.selection_clear(0, END)
+        self.lisbox_filenames.selection_set(i)
+        self.listbox_marks.selection_set(i)
+        self.lisbox_filenames.see(i)
+        self.listbox_marks.see(i)
+        self.image_pil = PIL.Image.open(self.get_image_filename())
+        self.points_orig = self.read_pts_file()
+        self.on_resize_canvas(self.canvas['width'], self.canvas['height'])
 
-    def selectPrev(self, *args):
+    def select_prev(self, *args):
         """Select entry that comes before current selection"""
-        i = self.iSelection()
+        i = self.get_selected_index()
         if i > 0: self.select(i-1)
 
-    def selectNext(self, *args):
+    def select_next(self, *args):
         """Select entry that comes after current selection"""
-        i = self.iSelection()
-        if i < len(self.lImgFilenames)-1: self.select(i+1)
+        i = self.get_selected_index()
+        if i < len(self.image_filenames)-1: self.select(i+1)
 
-    def canvasResizeCB(self, width, height):
+    def on_resize_canvas(self, width, height):
         """Called when canvas is resized"""
         if width <= 0 or height <= 0: return
         # maximize image width or height depending on aspect ratios
-        widthImg = self.imgPIL.size[0]
-        heightImg = self.imgPIL.size[1]
-        arImg = float(widthImg)/float(heightImg)
+        image_width = self.image_pil.size[0]
+        image_height = self.image_pil.size[1]
+        image_aspect_ratio = float(image_width)/float(image_height)
 
         self.canvas['width'] = width
         self.canvas['height'] = height
         widthCanvas = int(self.canvas['width'])
-        heightCanvas = int(self.canvas['height'])
-        arCanvas = float(widthCanvas)/float(heightCanvas)
+        canvas_height = int(self.canvas['height'])
+        canvas_aspect_ratio = float(widthCanvas)/float(canvas_height)
 
-        if arImg < arCanvas:
-            widthImgNew = int(arImg*float(heightCanvas))
-            heightImgNew = heightCanvas
+        if image_aspect_ratio < canvas_aspect_ratio:
+            new_image_width = int(image_aspect_ratio*float(canvas_height))
+            new_image_height = canvas_height
         else:
-            widthImgNew = widthCanvas
-            heightImgNew = int(float(widthCanvas)/arImg)
+            new_image_width = widthCanvas
+            new_image_height = int(float(widthCanvas)/image_aspect_ratio)
 
-        self.imgTk = PhotoImage(self.imgPIL.resize((widthImgNew, heightImgNew),
-                                                   PIL.Image.BILINEAR))
+        self.image_tk = PhotoImage(self.image_pil.resize((new_image_width,
+                                                          new_image_height),
+                                                         PIL.Image.BILINEAR))
 
-        self.xOffsetImg = 0.5*(float(widthCanvas)-float(widthImgNew))
-        self.yOffsetImg = 0.5*(float(heightCanvas)-float(heightImgNew))
+        self.x_offset = 0.5*(float(widthCanvas)-float(new_image_width))
+        self.y_offset = 0.5*(float(canvas_height)-float(new_image_height))
 
-        self.CrossHalfLength = 0.5*self.CrossSizeFrac*float(min(widthImgNew,
-                                                                heightImgNew))
+        self.crosshair_radius = 0.5*self.crosshair_fraction*float(
+            min(new_image_width, new_image_height))
 
         self.canvas.delete('image')
-        self.canvas.create_image(self.xOffsetImg, self.yOffsetImg, anchor=NW,
-                                 image=self.imgTk, tags='image')
+        self.canvas.create_image(self.x_offset, self.y_offset, anchor=NW,
+                                 image=self.image_tk, tags='image')
 
-        scaleWidth = float(widthImgNew)/float(widthImg)
-        scaleHeight = float(heightImgNew)/float(heightImg)
-        self.scaleImg = 0.5*(scaleWidth+scaleHeight)
-        self.lPtsCanvas = map(lambda(x): [x[0]*self.scaleImg+self.xOffsetImg,
-                                          x[1]*self.scaleImg+self.yOffsetImg],
-                              self.lPtsOrig)
-        self.drawPts()
+        width_scale = float(new_image_width)/float(image_width)
+        height_scale = float(new_image_height)/float(image_height)
+        self.image_scaling = 0.5*(width_scale+height_scale)
+        self.points_canvas = map(lambda(x):
+                                 [x[0]*self.image_scaling+self.x_offset,
+                                  x[1]*self.image_scaling+self.y_offset],
+                                 self.points_orig)
+        self.draw_points()
 
-    def drawPts(self):
+    def draw_points(self):
         """Draw a cross at each point in current entry's .pts file"""
         self.canvas.delete('line')
 
         # draw first crosshair
-        if len(self.lPtsCanvas) > 0:
-            firstPt = self.lPtsCanvas[0]
-            self.drawCross(firstPt[0], firstPt[1], self.CrossColor1),
+        if len(self.points_canvas) > 0:
+            point1 = self.points_canvas[0]
+            self.draw_crosshair(point1[0], point1[1], self.crosshair1_color),
 
         # draw second crosshair
-        if len(self.lPtsCanvas) > 1:
-            secondPt = self.lPtsCanvas[1]
-            self.drawCross(secondPt[0], secondPt[1], self.CrossColor2)
+        if len(self.points_canvas) > 1:
+            point2 = self.points_canvas[1]
+            self.draw_crosshair(point2[0], point2[1], self.crosshair2_color)
 
         # draw third crosshair
-        if len(self.lPtsCanvas) > 2:
-            map(lambda(Pt): self.drawCross(Pt[0], Pt[1], self.CrossColor3),
-                self.lPtsCanvas[2:])
+        if len(self.points_canvas) > 2:
+            map(lambda(Pt):
+                self.draw_crosshair(Pt[0], Pt[1], self.crosshair3_color),
+                self.points_canvas[2:])
 
-    def drawCross(self, x, y, fillColor):
+    def draw_crosshair(self, x, y, fillColor):
         """Draw a cross at location (x, y) in the currently selected image"""
-        xStart = x-self.CrossHalfLength
-        yStart = y-self.CrossHalfLength
+        start_x = x-self.crosshair_radius
+        start_y = y-self.crosshair_radius
 
-        xEnd = x+self.CrossHalfLength
-        yEnd = y+self.CrossHalfLength
+        end_x = x+self.crosshair_radius
+        end_y = y+self.crosshair_radius
 
-        minX = self.xOffsetImg
-        minY = self.yOffsetImg
+        min_x = self.x_offset
+        min_y = self.y_offset
 
-        maxX = self.xOffsetImg+self.imgTk.width()-1
-        maxY = self.yOffsetImg+self.imgTk.height()-1
+        max_x = self.x_offset+self.image_tk.width()-1
+        max_y = self.y_offset+self.image_tk.height()-1
 
-        if xStart < minX: xStart = minX
-        if yStart < minY: yStart = minY
+        if start_x < min_x: start_x = min_x
+        if start_y < min_y: start_y = min_y
 
-        if xEnd > maxX: xEnd = maxX
-        if yEnd > maxY: yEnd = maxY
+        if end_x > max_x: end_x = max_x
+        if end_y > max_y: end_y = max_y
 
-        self.canvas.create_line(x, yStart, x, yEnd, fill=fillColor,
-                                width=self.CrossLineWidth, tags='line')
-        self.canvas.create_line(xStart, y, xEnd, y, fill=fillColor,
-                                width=self.CrossLineWidth, tags='line')
+        self.canvas.create_line(x, start_y, x, end_y, fill=fillColor,
+                                width=self.crosshair_thickness, tags='line')
+        self.canvas.create_line(start_x, y, end_x, y, fill=fillColor,
+                                width=self.crosshair_thickness, tags='line')
 
-    def iSelection(self):
+    def get_selected_index(self):
         """Returns index of current selection"""
-        return(int(self.lbImgs.curselection()[0]))
+        return(int(self.lisbox_filenames.curselection()[0]))
 
-    def bCanvasCoordsInImg(self, x, y):
+    def coord_in_img(self, x, y):
         """Returns whether canvas coord (x, y) is inside the displayed image"""
-        return(x >= self.xOffsetImg and
-               y >= self.yOffsetImg and
-               x < self.xOffsetImg+self.imgTk.width() and
-               y < self.yOffsetImg+self.imgTk.height())
+        return(x >= self.x_offset and
+               y >= self.y_offset and
+               x < self.x_offset+self.image_tk.width() and
+               y < self.y_offset+self.image_tk.height())
 
-    def FindNearestPtWithinCrosshairs(self, x, y):
+    def find_point_near_crosshair(self, x, y):
         """Returns index of landmark within crosshair length of (x,y), or -1"""
         i = 0
-        imin = -1
-        minDist = self.imgTk.width()+self.imgTk.height()
-        for pair in self.lPtsCanvas:
-            xdist = x-pair[0]
-            ydist = y-pair[1]
-            dist = sqrt(xdist*xdist+ydist*ydist)
-            if dist <= self.CrossHalfLength and dist < minDist:
-                imin = i
+        i_min = -1
+        min_dist = self.image_tk.width()+self.image_tk.height()
+        for pair in self.points_canvas:
+            x_dist = x-pair[0]
+            y_dist = y-pair[1]
+            dist = sqrt(x_dist*x_dist+y_dist*y_dist)
+            if dist <= self.crosshair_radius and dist < min_dist:
+                i_min = i
             i += 1
-        return(imin)
+        return(i_min)
 
-    def savePts(self):
-        """Save pts file for selection self.iSelection()"""
+    def save_points(self):
+        """Save pts file for selection self.get_selected_index()"""
         # remove whatever was there before
-        if self.bHasPtsFile():
-            os.remove(self.strPtsFilename())
+        if self.has_pts_file():
+            os.remove(self.get_pts_filename())
         # save current result
-        if len(self.lPtsOrig) > 0:
-            hFile = open(self.strPtsFilename(), 'w')
-            for pair in self.lPtsOrig:
-                strToWrite = str(pair[0])+', '+str(pair[1])+'\n'
-                hFile.write(strToWrite)
-            hFile.close()
+        if len(self.points_orig) > 0:
+            filehandle = open(self.get_pts_filename(), 'w')
+            for pair in self.points_orig:
+                message = str(pair[0])+', '+str(pair[1])+'\n'
+                filehandle.write(message)
+            filehandle.close()
 
-    def ReorderPoints(self):
+    def sort_points(self):
         """
         Reorder points, assuming face labeling, so that the first point
         is always the person's right eye, the second point is the person's
         left eye and the third point is the mouth.  NB: this function only
-        (destructively) works on self.lPtsOrig
+        (destructively) works on self.points_orig
         """
-        if len(self.lPtsOrig) != 3: return
+        if len(self.points_orig) != 3: return
         # step 1 sort the points according to y-value
-        self.lPtsOrig.sort(lambda ptA, ptB: cmp(ptA[1], ptB[1]))
+        self.points_orig.sort(lambda ptA, ptB: cmp(ptA[1], ptB[1]))
         # step 2: from the top-most two points, call the leftmost one
         # the person's right eye and call the other the person's left eye
-        if self.lPtsOrig[0][0] > self.lPtsOrig[1][0]:
+        if self.points_orig[0][0] > self.points_orig[1][0]:
             # swap first and second points' x-coordinate
-            tmp = self.lPtsOrig[0][0]
-            self.lPtsOrig[0][0] = self.lPtsOrig[1][0]
-            self.lPtsOrig[1][0] = tmp
+            tmp = self.points_orig[0][0]
+            self.points_orig[0][0] = self.points_orig[1][0]
+            self.points_orig[1][0] = tmp
             # swap first and second points' y-coordinate
-            tmp = self.lPtsOrig[0][1]
-            self.lPtsOrig[0][1] = self.lPtsOrig[1][1]
-            self.lPtsOrig[1][1] = tmp
-            self.bChangedAny = True
+            tmp = self.points_orig[0][1]
+            self.points_orig[0][1] = self.points_orig[1][1]
+            self.points_orig[1][1] = tmp
+            self.some_changed = True
 
-    def bHasPtsFile(self, i=None):
+    def has_pts_file(self, i=None):
         """Returns whether (i'th) selection has a pts file with landmarks"""
-        if i == None: i = self.iSelection()
-        return(os.path.exists(self.strPtsFilename(i)))
+        if i == None: i = self.get_selected_index()
+        return(os.path.exists(self.get_pts_filename(i)))
 
-    def strPtsFilename(self, i=None):
+    def get_pts_filename(self, i=None):
         """Returns filename of selected (or i'th) .pts file"""
-        if i == None: i = self.iSelection()
-        strImgFilename = self.lImgFilenames[i]
-        return(os.path.splitext(strImgFilename)[0]+'.pts')
+        if i == None: i = self.get_selected_index()
+        image_filename = self.image_filenames[i]
+        return(os.path.splitext(image_filename)[0]+'.pts')
 
-    def strImgFilename(self, i=None):
+    def get_image_filename(self, i=None):
         """Returns filename of (i'th) selection's image"""
-        if i == None: i = self.iSelection()
-        return(self.lImgFilenames[i])
+        if i == None: i = self.get_selected_index()
+        return(self.image_filenames[i])
 
-    def readPtsFile(self, i=None):
+    def read_pts_file(self, i=None):
         """Returns list of points (lists) in (i'th) selection's .pts file"""
-        if i == None: i = self.iSelection()
-        if self.bHasPtsFile(i):
-            hFile = open(self.strPtsFilename(i), 'r')
-            lstrPoints = hFile.readlines()
-            hFile.close()
-            return(map(lambda(s): map(float, s.split(',')), lstrPoints))
+        if i == None: i = self.get_selected_index()
+        if self.has_pts_file(i):
+            filehandle = open(self.get_pts_filename(i), 'r')
+            lines = filehandle.readlines()
+            filehandle.close()
+            return(map(lambda(s): map(float, s.split(',')), lines))
         else:
             return([])
 
-    def MarkAsLabeled(self, i=None):
+    def mark_labeled(self, i=None):
         """Mark (i'th) selection as having a .pts file"""
-        if i == None: i = self.iSelection()
-        self.lbPts.insert(i, '+')
-        self.lbPts.delete(i+1)
-        self.lbPts.selection_set(i)
+        if i == None: i = self.get_selected_index()
+        self.listbox_marks.insert(i, '+')
+        self.listbox_marks.delete(i+1)
+        self.listbox_marks.selection_set(i)
 
-    def MarkAsUnlabeled(self, i=None):
+    def mark_unlabeled(self, i=None):
         """Unmark (i'th) selection as having a .pts file"""
-        if i == None: i = self.iSelection()
-        self.lbPts.insert(i, '')
-        self.lbPts.delete(i+1)
-        self.lbPts.selection_set(i)
+        if i == None: i = self.get_selected_index()
+        self.listbox_marks.insert(i, '')
+        self.listbox_marks.delete(i+1)
+        self.listbox_marks.selection_set(i)
 
 ###############################################################################
 
-def FindImgFiles(strPath):
-    """Find all image files recursively in directory 'strPath'"""
+def find_image_files(path):
+    """Find all image files recursively in directory 'path'"""
 
-    def bIsImgFile(strFilename):
-        """Returns whether strFilename is an image file that's PIL-openable"""
+    def is_image_file(filename):
+        """Returns whether filename is an image file that's PIL-openable"""
         try:
-            img = PIL.Image.open(strFilename)
+            img = PIL.Image.open(filename)
             return(True)
         except IOError, e:
             return(False)
 
-    def walker(strPath, lFilenames=[]):
+    def walker(path, filenames=[]):
         """Recursive file finder that follows symbolic links"""
-        for strRoot, lDirs, lFiles in os.walk(strPath):
+        for root, dirs, files in os.walk(path):
             # collect full paths for all files recursively found
-            for strFile in lFiles:
+            for filename in files:
                 # svn stores a copy of the image so ignore those
-                if strFile[len(strFile)-9:] != ".svn-base":
-                    strFilename = os.path.join(strRoot, strFile)
-                    if bIsImgFile(strFilename):
-                        lFilenames.append(strFilename)
+                if filename[len(filename)-9:] != ".svn-base":
+                    full_path = os.path.join(root, filename)
+                    if is_image_file(full_path):
+                        filenames.append(full_path)
             # also walk directories that are symbolic links
-            for strDir in lDirs:
-                if os.path.islink(os.path.join(strRoot, strDir)):
-                    walker(os.path.join(strRoot, strDir), lFilenames)
-        return(lFilenames)
+            for strDir in dirs:
+                if os.path.islink(os.path.join(root, strDir)):
+                    walker(os.path.join(root, strDir), filenames)
+        return(filenames)
 
     # get a list of all files recursively found
-    lFilenames = walker(strPath)
-    lFilenames.sort()
-    return(lFilenames)
+    filenames = walker(path)
+    filenames.sort()
+    return(filenames)
 
 ###############################################################################
 
 def main():
-    strProgname = sys.argv[0]
-    strUsage = '\n\tUsage: %s <directory>\n\n' % strProgname
+    progname = sys.argv[0]
+    usage_message = '\n\tUsage: %s <directory>\n\n' % progname
 
-    nArgs = len(sys.argv)-1
-    if nArgs == 0 or nArgs > 1:
-        print strUsage
-        print '\t%s finds images recursively in given directory ' % strProgname
+    num_args = len(sys.argv)-1
+    if num_args == 0 or num_args > 1:
+        print usage_message
+        print '\t%s finds images recursively in given directory ' % progname
         print '\tand brings up a GUI for marking points in each image. The\n'+\
               '\tmarked points are saved to a file with the same name as\n'+\
               '\tthe image file, but with a .pts extension.\n'
         raise SystemExit(-1)
 
-    strPath = sys.argv[1];
-    if not os.path.isdir(strPath):
-        print '\tError: directory %s does not exist.  Exiting...' % strPath
+    path = sys.argv[1];
+    if not os.path.isdir(path):
+        print '\tError: directory %s does not exist.  Exiting...' % path
         raise SystemExit(-1)
 
     print '\nINSTRUCTIONS:'
