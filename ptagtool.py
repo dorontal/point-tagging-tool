@@ -284,10 +284,10 @@ class Application(Frame):
         self.points_canvas = [[x[0]*self.image_scaling+self.x_offset,
                                x[1]*self.image_scaling+self.y_offset]
                               for x in self.points_orig]
-        self.draw_points()
+        self.redraw_points()
 
-    def draw_points(self):
-        """Draw points in current entry's .pts file"""
+    def redraw_points(self):
+        """redraw points in current entry's .pts file"""
         self.canvas.delete('line')
 
         # draw first crosshair in color1
@@ -427,8 +427,6 @@ class Application(Frame):
             filehandle = open(self.get_pts_filename(i), 'r')
             lines = filehandle.readlines()
             filehandle.close()
-            # return map(lambda(s):
-            #            map(float, s.split(',')), lines)
             return [[float(pair[0]), float(pair[1])]
                     for pair in [line.split(',') for line in lines]]
         else:
