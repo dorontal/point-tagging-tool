@@ -483,7 +483,6 @@ def walker(path, filenames):
 
 def find_image_files(path):
     """Find all image files recursively in directory 'path'"""
-    # get a list of all files recursively found
     filenames = walker(path, [])
     filenames.sort()
     return filenames
