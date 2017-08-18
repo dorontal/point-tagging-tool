@@ -457,32 +457,32 @@ def on_mousewheel(listbox, i_button, n_units=5):
     if i_button == 4:
         listbox.yview(SCROLL, -n_units, UNITS)
 
+def is_image_file(filename):
+    """Returns whether filename is an image file that's PIL-openable"""
+    try:
+        PIL.Image.open(filename)
+        return True
+    except IOError:
+        return False
+
+def walker(path, filenames):
+    """Recursive file finder that follows symbolic links"""
+    for root, dirs, files in os.walk(path):
+        # collect full paths for all files recursively found
+        for filename in files:
+            # svn stores a copy of the image so ignore those
+            if filename[len(filename)-9:] != ".svn-base":
+                full_path = os.path.join(root, filename)
+                if is_image_file(full_path):
+                    filenames.append(full_path)
+        # also walk directories that are symbolic links
+        for dirname in dirs:
+            if os.path.islink(os.path.join(root, dirname)):
+                walker(os.path.join(root, dirname), filenames)
+    return filenames
+
 def find_image_files(path):
     """Find all image files recursively in directory 'path'"""
-
-    def is_image_file(filename):
-        """Returns whether filename is an image file that's PIL-openable"""
-        try:
-            PIL.Image.open(filename)
-            return True
-        except IOError:
-            return False
-
-    def walker(path, filenames):
-        """Recursive file finder that follows symbolic links"""
-        for root, dirs, files in os.walk(path):
-            # collect full paths for all files recursively found
-            for filename in files:
-                # svn stores a copy of the image so ignore those
-                if filename[len(filename)-9:] != ".svn-base":
-                    full_path = os.path.join(root, filename)
-                    if is_image_file(full_path):
-                        filenames.append(full_path)
-            # also walk directories that are symbolic links
-            for dirname in dirs:
-                if os.path.islink(os.path.join(root, dirname)):
-                    walker(os.path.join(root, dirname), filenames)
-        return filenames
 
     # get a list of all files recursively found
     filenames = walker(path, [])
