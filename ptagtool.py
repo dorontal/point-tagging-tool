@@ -466,7 +466,7 @@ def is_image_file(filename):
         return False
 
 def walker(path, filenames):
-    """Recursive file finder that follows symbolic links"""
+    """Recursive image file search (follows symlinked folders)"""
     for root, dirs, files in os.walk(path):
         # collect full paths for all files recursively found
         for filename in files:
@@ -483,7 +483,6 @@ def walker(path, filenames):
 
 def find_image_files(path):
     """Find all image files recursively in directory 'path'"""
-
     # get a list of all files recursively found
     filenames = walker(path, [])
     filenames.sort()
