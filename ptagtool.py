@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+"""ptagtool.py - tool to tag images with points"""
 # ptagtool.py - an image point tagging tool.  Saves tagged point coordinates
 #               into text files with extension '.pts' and filename the same
 #               as the image filename
@@ -8,14 +8,16 @@
 # Author: Doron Tal
 
 import sys
-import os, os.path
-import PIL.Image
-from Tkinter import *
-from ImageTk import PhotoImage
+import os
+from Tkinter import Frame, N, S, E, W, Canvas, Scrollbar, Listbox,\
+    HORIZONTAL, VERTICAL, SINGLE, END, NW, SCROLL, UNITS
 from tkFont import Font
 from math import sqrt
+from ImageTk import PhotoImage
+import PIL.Image
 
 class Application(Frame):
+    """Container class, encapsulates app"""
     # this class inherits from Tkinter.parent
     def __init__(self, path, master=None):
         """Constructor"""
@@ -148,18 +150,19 @@ class Application(Frame):
 
         # bind wheel scroll
         self.lisbox_filenames.bind('<Button-4>', lambda e, s=self:
-                                   s.on_mousewheel(self.listbox_marks, 4))
+                                   on_mousewheel(self.listbox_marks, 4))
         self.lisbox_filenames.bind('<Button-5>', lambda e, s=self:
-                                   s.on_mousewheel(self.listbox_marks, 5))
+                                   on_mousewheel(self.listbox_marks, 5))
         self.listbox_marks.bind('<Button-4>', lambda e, s=self:
-                                s.on_mousewheel(self.lisbox_filenames, 4))
+                                on_mousewheel(self.lisbox_filenames, 4))
         self.listbox_marks.bind('<Button-5>', lambda e, s=self:
-                                s.on_mousewheel(self.lisbox_filenames, 5))
+                                on_mousewheel(self.lisbox_filenames, 5))
 
         # skip is # of chars to skip in path string so that only the
         # part of the path that was not supplied is displayed
         skip = len(self.path)
-        if self.path[skip-1] != '/': skip += 1
+        if self.path[skip-1] != '/':
+            skip += 1
 
         # insert image filenames plus marks into lists and
         # select first image that does not have pts file
@@ -185,34 +188,29 @@ class Application(Frame):
         apply(self.lisbox_filenames.yview, args)
         apply(self.listbox_marks.yview, args)
 
-    def on_mousewheel(self, lb, iButton, nUnits=5):
-        """Mouse wheel move callback"""
-        self.scrollbar_y.set
-        if iButton == 5:
-            lb.yview(SCROLL, nUnits, UNITS)
-        if iButton == 4:
-            lb.yview(SCROLL, -nUnits, UNITS)
-
     def on_click_button1(self, event):
         """Button 1 click callback: adds a crosshair at click location"""
         if self.coord_in_img(event.x, event.y):
-            pt = [(event.x-self.x_offset)/self.image_scaling,
-                  (event.y-self.y_offset)/self.image_scaling]
-            ptScaled = [float(event.x), float(event.y)]
-            self.points_orig.append(pt)
-            self.points_canvas.append(ptScaled)
-            if len(self.points_orig) == 1: self.mark_labeled()
+            point = [(event.x-self.x_offset)/self.image_scaling,
+                     (event.y-self.y_offset)/self.image_scaling]
+            point_scaled = [float(event.x), float(event.y)]
+            self.points_orig.append(point)
+            self.points_canvas.append(point_scaled)
+            if len(self.points_orig) == 1:
+                self.mark_labeled()
             self.on_resize_canvas(self.canvas['width'], self.canvas['height'])
             self.some_changed = True
 
     def on_click_button3(self, event):
         """Button 3 click callback: deletes landmark near click location"""
-        if not self.coord_in_img(event.x, event.y): return
+        if not self.coord_in_img(event.x, event.y):
+            return
         i = self.find_point_near_crosshair(event.x, event.y)
         if i >= 0:
-            del(self.points_orig[i])
-            del(self.points_canvas[i])
-            if len(self.points_orig) == 0: self.mark_unlabeled()
+            del self.points_orig[i]
+            del self.points_canvas[i]
+            if len(self.points_orig) == 0:
+                self.mark_unlabeled()
             self.on_resize_canvas(self.canvas['width'], self.canvas['height'])
             self.some_changed = True
 
@@ -224,7 +222,8 @@ class Application(Frame):
         # the person's right eye is the first point, left eye is
         # second point and mouth is third point
         self.sort_points()
-        if self.some_changed: self.save_points()
+        if self.some_changed:
+            self.save_points()
         self.lisbox_filenames.selection_clear(0, END)
         self.listbox_marks.selection_clear(0, END)
         self.lisbox_filenames.selection_set(i)
@@ -235,19 +234,22 @@ class Application(Frame):
         self.points_orig = self.read_pts_file()
         self.on_resize_canvas(self.canvas['width'], self.canvas['height'])
 
-    def select_prev(self, *args):
+    def select_prev(self):
         """Select entry that comes before current selection"""
         i = self.get_selected_index()
-        if i > 0: self.select(i-1)
+        if i > 0:
+            self.select(i-1)
 
-    def select_next(self, *args):
+    def select_next(self):
         """Select entry that comes after current selection"""
         i = self.get_selected_index()
-        if i < len(self.image_filenames)-1: self.select(i+1)
+        if i < len(self.image_filenames)-1:
+            self.select(i+1)
 
     def on_resize_canvas(self, width, height):
         """Called when canvas is resized"""
-        if width <= 0 or height <= 0: return
+        if width <= 0 or height <= 0:
+            return
         # maximize image width or height depending on aspect ratios
         image_width = self.image_pil.size[0]
         image_height = self.image_pil.size[1]
@@ -255,22 +257,22 @@ class Application(Frame):
 
         self.canvas['width'] = width
         self.canvas['height'] = height
-        widthCanvas = int(self.canvas['width'])
+        canvas_width = int(self.canvas['width'])
         canvas_height = int(self.canvas['height'])
-        canvas_aspect_ratio = float(widthCanvas)/float(canvas_height)
+        canvas_aspect_ratio = float(canvas_width)/float(canvas_height)
 
         if image_aspect_ratio < canvas_aspect_ratio:
             new_image_width = int(image_aspect_ratio*float(canvas_height))
             new_image_height = canvas_height
         else:
-            new_image_width = widthCanvas
-            new_image_height = int(float(widthCanvas)/image_aspect_ratio)
+            new_image_width = canvas_width
+            new_image_height = int(float(canvas_width)/image_aspect_ratio)
 
         self.image_tk = PhotoImage(self.image_pil.resize((new_image_width,
                                                           new_image_height),
                                                          PIL.Image.BILINEAR))
 
-        self.x_offset = 0.5*(float(widthCanvas)-float(new_image_width))
+        self.x_offset = 0.5*(float(canvas_width)-float(new_image_width))
         self.y_offset = 0.5*(float(canvas_height)-float(new_image_height))
 
         self.crosshair_radius = 0.5*self.crosshair_fraction*float(
@@ -283,10 +285,9 @@ class Application(Frame):
         width_scale = float(new_image_width)/float(image_width)
         height_scale = float(new_image_height)/float(image_height)
         self.image_scaling = 0.5*(width_scale+height_scale)
-        self.points_canvas = map(lambda(x):
-                                 [x[0]*self.image_scaling+self.x_offset,
-                                  x[1]*self.image_scaling+self.y_offset],
-                                 self.points_orig)
+        self.points_canvas = [[x[0]*self.image_scaling+self.x_offset,
+                               x[1]*self.image_scaling+self.y_offset]
+                              for x in self.points_orig]
         self.draw_points()
 
     def draw_points(self):
@@ -296,7 +297,7 @@ class Application(Frame):
         # draw first crosshair
         if len(self.points_canvas) > 0:
             point1 = self.points_canvas[0]
-            self.draw_crosshair(point1[0], point1[1], self.crosshair1_color),
+            self.draw_crosshair(point1[0], point1[1], self.crosshair1_color)
 
         # draw second crosshair
         if len(self.points_canvas) > 1:
@@ -305,17 +306,16 @@ class Application(Frame):
 
         # draw third crosshair
         if len(self.points_canvas) > 2:
-            map(lambda(Pt):
-                self.draw_crosshair(Pt[0], Pt[1], self.crosshair3_color),
-                self.points_canvas[2:])
+            for point in self.points_canvas[2:]:
+                self.draw_crosshair(point[0], point[1], self.crosshair3_color)
 
-    def draw_crosshair(self, x, y, fillColor):
+    def draw_crosshair(self, x_coord, y_coord, fill_color):
         """Draw a cross at location (x, y) in the currently selected image"""
-        start_x = x-self.crosshair_radius
-        start_y = y-self.crosshair_radius
+        start_x = x_coord-self.crosshair_radius
+        start_y = y_coord-self.crosshair_radius
 
-        end_x = x+self.crosshair_radius
-        end_y = y+self.crosshair_radius
+        end_x = x_coord+self.crosshair_radius
+        end_y = y_coord+self.crosshair_radius
 
         min_x = self.x_offset
         min_y = self.y_offset
@@ -323,41 +323,47 @@ class Application(Frame):
         max_x = self.x_offset+self.image_tk.width()-1
         max_y = self.y_offset+self.image_tk.height()-1
 
-        if start_x < min_x: start_x = min_x
-        if start_y < min_y: start_y = min_y
+        if start_x < min_x:
+            start_x = min_x
+        if start_y < min_y:
+            start_y = min_y
 
-        if end_x > max_x: end_x = max_x
-        if end_y > max_y: end_y = max_y
+        if end_x > max_x:
+            end_x = max_x
+        if end_y > max_y:
+            end_y = max_y
 
-        self.canvas.create_line(x, start_y, x, end_y, fill=fillColor,
-                                width=self.crosshair_thickness, tags='line')
-        self.canvas.create_line(start_x, y, end_x, y, fill=fillColor,
-                                width=self.crosshair_thickness, tags='line')
+        self.canvas.create_line(x_coord, start_y, x_coord, end_y,
+                                width=self.crosshair_thickness, tags='line',
+                                fill=fill_color)
+        self.canvas.create_line(start_x, y_coord, end_x, y_coord,
+                                width=self.crosshair_thickness, tags='line',
+                                fill=fill_color)
 
     def get_selected_index(self):
         """Returns index of current selection"""
-        return(int(self.lisbox_filenames.curselection()[0]))
+        return int(self.lisbox_filenames.curselection()[0])
 
-    def coord_in_img(self, x, y):
-        """Returns whether canvas coord (x, y) is inside the displayed image"""
-        return(x >= self.x_offset and
-               y >= self.y_offset and
-               x < self.x_offset+self.image_tk.width() and
-               y < self.y_offset+self.image_tk.height())
+    def coord_in_img(self, x_coord, y_coord):
+        """Returns whether (x_coord, y_coord) is inside the shown image"""
+        return (x_coord >= self.x_offset and
+                y_coord >= self.y_offset and
+                x_coord < self.x_offset+self.image_tk.width() and
+                y_coord < self.y_offset+self.image_tk.height())
 
-    def find_point_near_crosshair(self, x, y):
-        """Returns index of landmark within crosshair length of (x,y), or -1"""
+    def find_point_near_crosshair(self, x_coord, y_coord):
+        """Returns index of landmark point near (x_coord, y_coord), or -1"""
         i = 0
         i_min = -1
         min_dist = self.image_tk.width()+self.image_tk.height()
         for pair in self.points_canvas:
-            x_dist = x-pair[0]
-            y_dist = y-pair[1]
+            x_dist = x_coord-pair[0]
+            y_dist = y_coord-pair[1]
             dist = sqrt(x_dist*x_dist+y_dist*y_dist)
             if dist <= self.crosshair_radius and dist < min_dist:
                 i_min = i
             i += 1
-        return(i_min)
+        return i_min
 
     def save_points(self):
         """Save pts file for selection self.get_selected_index()"""
@@ -379,9 +385,11 @@ class Application(Frame):
         left eye and the third point is the mouth.  NB: this function only
         (destructively) works on self.points_orig
         """
-        if len(self.points_orig) != 3: return
+        if len(self.points_orig) != 3:
+            return
         # step 1 sort the points according to y-value
-        self.points_orig.sort(lambda ptA, ptB: cmp(ptA[1], ptB[1]))
+        self.points_orig.sort(lambda ptA, ptB:
+                              cmp(ptA[1], ptB[1]))
         # step 2: from the top-most two points, call the leftmost one
         # the person's right eye and call the other the person's left eye
         if self.points_orig[0][0] > self.points_orig[1][0]:
@@ -397,46 +405,62 @@ class Application(Frame):
 
     def has_pts_file(self, i=None):
         """Returns whether (i'th) selection has a pts file with landmarks"""
-        if i == None: i = self.get_selected_index()
-        return(os.path.exists(self.get_pts_filename(i)))
+        if i is None:
+            i = self.get_selected_index()
+        return os.path.exists(self.get_pts_filename(i))
 
     def get_pts_filename(self, i=None):
         """Returns filename of selected (or i'th) .pts file"""
-        if i == None: i = self.get_selected_index()
+        if i is None:
+            i = self.get_selected_index()
         image_filename = self.image_filenames[i]
-        return(os.path.splitext(image_filename)[0]+'.pts')
+        return os.path.splitext(image_filename)[0]+'.pts'
 
     def get_image_filename(self, i=None):
         """Returns filename of (i'th) selection's image"""
-        if i == None: i = self.get_selected_index()
-        return(self.image_filenames[i])
+        if i is None:
+            i = self.get_selected_index()
+        return self.image_filenames[i]
 
     def read_pts_file(self, i=None):
         """Returns list of points (lists) in (i'th) selection's .pts file"""
-        if i == None: i = self.get_selected_index()
+        if i is None:
+            i = self.get_selected_index()
         if self.has_pts_file(i):
             filehandle = open(self.get_pts_filename(i), 'r')
             lines = filehandle.readlines()
             filehandle.close()
-            return(map(lambda(s): map(float, s.split(',')), lines))
+            # return map(lambda(s):
+            #            map(float, s.split(',')), lines)
+            return [[float(pair[0]), float(pair[1])]
+                    for pair in [line.split(',') for line in lines]]
         else:
-            return([])
+            return []
 
     def mark_labeled(self, i=None):
         """Mark (i'th) selection as having a .pts file"""
-        if i == None: i = self.get_selected_index()
+        if i is None:
+            i = self.get_selected_index()
         self.listbox_marks.insert(i, '+')
         self.listbox_marks.delete(i+1)
         self.listbox_marks.selection_set(i)
 
     def mark_unlabeled(self, i=None):
         """Unmark (i'th) selection as having a .pts file"""
-        if i == None: i = self.get_selected_index()
+        if i is None:
+            i = self.get_selected_index()
         self.listbox_marks.insert(i, '')
         self.listbox_marks.delete(i+1)
         self.listbox_marks.selection_set(i)
 
 ###############################################################################
+
+def on_mousewheel(listbox, i_button, n_units=5):
+    """Mouse wheel move callback"""
+    if i_button == 5:
+        listbox.yview(SCROLL, n_units, UNITS)
+    if i_button == 4:
+        listbox.yview(SCROLL, -n_units, UNITS)
 
 def find_image_files(path):
     """Find all image files recursively in directory 'path'"""
@@ -444,12 +468,12 @@ def find_image_files(path):
     def is_image_file(filename):
         """Returns whether filename is an image file that's PIL-openable"""
         try:
-            img = PIL.Image.open(filename)
-            return(True)
-        except IOError, e:
-            return(False)
+            PIL.Image.open(filename)
+            return True
+        except IOError:
+            return False
 
-    def walker(path, filenames=[]):
+    def walker(path, filenames):
         """Recursive file finder that follows symbolic links"""
         for root, dirs, files in os.walk(path):
             # collect full paths for all files recursively found
@@ -460,19 +484,20 @@ def find_image_files(path):
                     if is_image_file(full_path):
                         filenames.append(full_path)
             # also walk directories that are symbolic links
-            for strDir in dirs:
-                if os.path.islink(os.path.join(root, strDir)):
-                    walker(os.path.join(root, strDir), filenames)
-        return(filenames)
+            for dirname in dirs:
+                if os.path.islink(os.path.join(root, dirname)):
+                    walker(os.path.join(root, dirname), filenames)
+        return filenames
 
     # get a list of all files recursively found
-    filenames = walker(path)
+    filenames = walker(path, [])
     filenames.sort()
-    return(filenames)
+    return filenames
 
 ###############################################################################
 
 def main():
+    """Function that runs when this script is called from the commandline"""
     progname = sys.argv[0]
     usage_message = '\n\tUsage: %s <directory>\n\n' % progname
 
@@ -485,7 +510,7 @@ def main():
               '\tthe image file, but with a .pts extension.\n'
         raise SystemExit(-1)
 
-    path = sys.argv[1];
+    path = sys.argv[1]
     if not os.path.isdir(path):
         print '\tError: directory %s does not exist.  Exiting...' % path
         raise SystemExit(-1)
