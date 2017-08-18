@@ -229,12 +229,14 @@ class Application(Frame):
         self.on_resize_canvas(self.canvas['width'], self.canvas['height'])
 
     def select_prev(self, *args):
+        #pylint: disable=unused-argument
         """Select entry that comes before current selection"""
         i = self.get_selected_index()
         if i > 0:
             self.select(i-1)
 
     def select_next(self, *args):
+        #pylint: disable=unused-argument
         """Select entry that comes after current selection"""
         i = self.get_selected_index()
         if i < len(self.image_filenames)-1:
