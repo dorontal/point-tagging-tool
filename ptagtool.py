@@ -73,10 +73,6 @@ class Application(Frame):
         # the scale of currently displayed image (updated upon display)
         self.image_scaling = 1.0
 
-        # True if any of the .pts file points have been changed
-        # for the currently selected image, False otherwise
-        self.some_changed = False
-
         # create all widges and set their initial conditions
         self.create_widgets()
 
@@ -199,7 +195,7 @@ class Application(Frame):
             if len(self.points_orig) == 1:
                 self.mark_labeled()
             self.on_resize_canvas(self.canvas['width'], self.canvas['height'])
-            self.some_changed = True
+            self.save_points()
 
     def on_click_button3(self, event):
         """Button 3 click callback: deletes landmark near click location"""
@@ -212,7 +208,7 @@ class Application(Frame):
             if len(self.points_orig) == 0:
                 self.mark_unlabeled()
             self.on_resize_canvas(self.canvas['width'], self.canvas['height'])
-            self.some_changed = True
+            self.save_points()
 
     def select(self, i):
         """Select the i'th image to work with - make current selection = i"""
@@ -222,8 +218,6 @@ class Application(Frame):
         # the person's right eye is the first point, left eye is
         # second point and mouth is third point
         self.sort_points()
-        if self.some_changed:
-            self.save_points()
         self.lisbox_filenames.selection_clear(0, END)
         self.listbox_marks.selection_clear(0, END)
         self.lisbox_filenames.selection_set(i)
@@ -234,13 +228,13 @@ class Application(Frame):
         self.points_orig = self.read_pts_file()
         self.on_resize_canvas(self.canvas['width'], self.canvas['height'])
 
-    def select_prev(self):
+    def select_prev(self, *args):
         """Select entry that comes before current selection"""
         i = self.get_selected_index()
         if i > 0:
             self.select(i-1)
 
-    def select_next(self):
+    def select_next(self, *args):
         """Select entry that comes after current selection"""
         i = self.get_selected_index()
         if i < len(self.image_filenames)-1:
@@ -294,23 +288,23 @@ class Application(Frame):
         """Draw a cross at each point in current entry's .pts file"""
         self.canvas.delete('line')
 
-        # draw first crosshair
+        # draw first crosshair in color1
         if len(self.points_canvas) > 0:
             point1 = self.points_canvas[0]
             self.draw_crosshair(point1[0], point1[1], self.crosshair1_color)
 
-        # draw second crosshair
+        # draw second crosshair in color2
         if len(self.points_canvas) > 1:
             point2 = self.points_canvas[1]
             self.draw_crosshair(point2[0], point2[1], self.crosshair2_color)
 
-        # draw third crosshair
+        # draw third or higher crosshair in color3
         if len(self.points_canvas) > 2:
             for point in self.points_canvas[2:]:
                 self.draw_crosshair(point[0], point[1], self.crosshair3_color)
 
     def draw_crosshair(self, x_coord, y_coord, fill_color):
-        """Draw a cross at location (x, y) in the currently selected image"""
+        """Draw a cross at (x_coord, y_coord) in the currently selected image"""
         start_x = x_coord-self.crosshair_radius
         start_y = y_coord-self.crosshair_radius
 
@@ -366,7 +360,7 @@ class Application(Frame):
         return i_min
 
     def save_points(self):
-        """Save pts file for selection self.get_selected_index()"""
+        """Save current points to pts file"""
         # remove whatever was there before
         if self.has_pts_file():
             os.remove(self.get_pts_filename())
@@ -401,7 +395,8 @@ class Application(Frame):
             tmp = self.points_orig[0][1]
             self.points_orig[0][1] = self.points_orig[1][1]
             self.points_orig[1][1] = tmp
-            self.some_changed = True
+            # order changed, so re-save
+            self.save_points()
 
     def has_pts_file(self, i=None):
         """Returns whether (i'th) selection has a pts file with landmarks"""
