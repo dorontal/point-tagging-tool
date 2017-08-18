@@ -287,7 +287,7 @@ class Application(Frame):
         self.draw_points()
 
     def draw_points(self):
-        """Draw a cross at each point in current entry's .pts file"""
+        """Draw a each point in current entry's .pts file"""
         self.canvas.delete('line')
 
         # draw first crosshair in color1
