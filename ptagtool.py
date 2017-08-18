@@ -2,7 +2,7 @@
 """ptagtool.py - tool to tag images with points"""
 # ptagtool.py - an image point tagging tool.  Saves tagged point coordinates
 #               into text files with extension '.pts' and filename the same
-#               as the image filename
+#               as the image filename. Run this for instructions.
 
 # File: ptagtool.py
 # Author: Doron Tal
