@@ -16,6 +16,6 @@ included in a default python installation:
 ## Usage
 
 Provide a directory that contains some image files as input, running
-the script from the command line:
+the script from the command line, e.g: 
 
-    # ./ptagtool.py ~/Downloads
+    # ./ptagtool.py ~/Pictures
