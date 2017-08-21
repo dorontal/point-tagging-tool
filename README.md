@@ -11,7 +11,7 @@ included in a default python installation:
   * `python-imaging`
   * `python-pil`
   * `python-pil.imagetk`
-  * `pypthon-gtk2`
+  * `python-gtk2`
 
 ## Usage
 
