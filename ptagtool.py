@@ -7,11 +7,11 @@
 
 import sys
 import os
-from Tkinter import Frame, N, S, E, W, Canvas, Scrollbar, Listbox,\
+from tkinter import Frame, N, S, E, W, Canvas, Scrollbar, Listbox,\
     HORIZONTAL, VERTICAL, SINGLE, END, NW, SCROLL, UNITS
-from tkFont import Font
+from tkinter.font import Font
 from math import sqrt
-from ImageTk import PhotoImage
+from PIL.ImageTk import PhotoImage
 import PIL.Image
 
 class Application(Frame):
@@ -192,7 +192,8 @@ class Application(Frame):
             self.points_canvas.append(point_scaled)
             if len(self.points_orig) == 1:
                 self.mark_labeled()
-            self.on_resize_canvas(self.canvas['width'], self.canvas['height'])
+            self.on_resize_canvas(int(self.canvas['width']),
+                                  int(self.canvas['height']))
             self.save_points()
 
     def on_click_button3(self, event):
@@ -205,7 +206,8 @@ class Application(Frame):
             del self.points_canvas[i]
             if len(self.points_orig) == 0:
                 self.mark_unlabeled()
-            self.on_resize_canvas(self.canvas['width'], self.canvas['height'])
+            self.on_resize_canvas(int(self.canvas['width']),
+                                  int(self.canvas['height']))
             self.save_points()
 
     def select(self, i):
@@ -224,7 +226,8 @@ class Application(Frame):
         self.listbox_marks.see(i)
         self.image_pil = PIL.Image.open(self.get_image_filename())
         self.points_orig = self.read_pts_file()
-        self.on_resize_canvas(self.canvas['width'], self.canvas['height'])
+        self.on_resize_canvas(int(self.canvas['width']),
+                              int(self.canvas['height']))
 
     def select_prev(self, *args):
         #pylint: disable=unused-argument
@@ -382,8 +385,7 @@ class Application(Frame):
         if len(self.points_orig) != 3:
             return
         # step 1 sort the points according to y-value
-        self.points_orig.sort(lambda ptA, ptB:
-                              cmp(ptA[1], ptB[1]))
+        self.points_orig.sort(key=lambda pt: pt[1])
         # step 2: from the top-most two points, call the leftmost one
         # the person's right eye and call the other the person's left eye
         if self.points_orig[0][0] > self.points_orig[1][0]:
@@ -494,34 +496,34 @@ def main():
 
     num_args = len(sys.argv)-1
     if num_args == 0 or num_args > 1:
-        print usage_message
-        print '\t%s finds images recursively in given directory ' % progname
-        print '\tand brings up a GUI for marking points in each image. The\n'+\
+        print(usage_message)
+        print('\t%s finds images recursively in given directory ' % progname)
+        print('\tand brings up a GUI for marking points in each image. The\n'+\
               '\tmarked points are saved to a file with the same name as\n'+\
-              '\tthe image file, but with a .pts extension.\n'
+              '\tthe image file, but with a .pts extension.\n')
         raise SystemExit(-1)
 
     path = sys.argv[1]
     if not os.path.isdir(path):
-        print '\tError: directory %s does not exist.  Exiting...' % path
+        print('\tError: directory %s does not exist.  Exiting...' % path)
         raise SystemExit(-1)
 
-    print '\nINSTRUCTIONS:'
-    print '-------------'
-    print 'Anywhere in the appliations:'
-    print '\t<Down Arrow>  - go to next image'
-    print '\t<Up Arrow>    - go to previous image'
-    print '\t<Alt-F4>      - quit'
-    print 'When the mouse is over displayed image:'
-    print '\t<Left Mouse>  - add a point'
-    print '\t<Right Mouse> - remove a point'
-    print 'When the mouse is over the list of image filenames:'
-    print '\t<Mouse wheel> - move through image list'
-    print '\t<Left Mouse>  - select image to work on'
-    print '\nNB: tagging is more accurate when this tool is maximized\n'
-    print 'OUTPUT: For each tagged image, a text file with the same name'
-    print '        as the original image filename (but with a .pts extension)'
-    print '        is saved at the same location as the image.'
+    print('\nINSTRUCTIONS:')
+    print('-------------')
+    print('Anywhere in the appliations:')
+    print('\t<Down Arrow>  - go to next image')
+    print('\t<Up Arrow>    - go to previous image')
+    print('\t<Alt-F4>      - quit')
+    print('When the mouse is over displayed image:')
+    print('\t<Left Mouse>  - add a point')
+    print('\t<Right Mouse> - remove a point')
+    print('When the mouse is over the list of image filenames:')
+    print('\t<Mouse wheel> - move through image list')
+    print('\t<Left Mouse>  - select image to work on')
+    print('\nNB: tagging is more accurate when this tool is maximized\n')
+    print('OUTPUT: For each tagged image, a text file with the same name')
+    print('        as the original image filename (but with a .pts extension)')
+    print('        is saved at the same location as the image.')
 
     Application(sys.argv[1]).mainloop()
 
