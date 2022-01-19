@@ -19,15 +19,14 @@ instructions.
 
 ## Prerequisites & Installation
 
-* This script was tested with Python 3.7.3
+* This script was tested with Python 3.9.2 on Debian Linux 10
 
 * First, install these system-wide python libraries:
 ```
-    sudo apt-get install python3-pil.imagetk
-    sudo apt-get install python3-tk
+    sudo apt install python3-venv
+    sudo apt install python3-tk
 ```
-* Then cd to the project directory (assuming repository is cloned
-  locally on your machine and type 
+* Then, from the project directory, type
 ```
     ./scripts/set_up_virtualenv
 ```

@@ -19,7 +19,7 @@ cd "$MY_DIR/.."
 
 if [ ! -d "env" ]; then
     # NOTE: you'll need to do:
-    # sudo apt-get install python3-venv, also need system python3 installed
+    # sudo apt install python3-venv, also need system python3 installed
 
     python3 -m venv env
 
