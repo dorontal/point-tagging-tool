@@ -28,10 +28,10 @@ instructions.
 ```
 * Then, from the project directory, type
 ```
-    ./scripts/set_up_virtualenv
+    ./scripts/set_up_virtualenv.sh
 ```
 
-* The above step activates the virtual environment for you, but if you
+* This last step activates the virtual environment for you, but if you
   are returning to this directory later and have not activated your virtual
   environment,  you will need to activate it via (after cd'ing to the 
   project's root folder) 
